@@ -52,7 +52,7 @@ X_train, X_test = X[:split], X[split:]
 y_train, y_test = y[:split], y[split:]
 
 
-# Pipeline 1: Linear Regression + PCA 
+# Pipeline 1: Linear Regression 
 pipe_linear = Pipeline([
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=0.95)), # Giữ lại 95% phương sai
