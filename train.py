@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 import matplotlib.pyplot as plt
 import joblib
+from sklearn.compose import ColumnTransformer
 from sklearn.metrics import classification_report
 
 
@@ -55,6 +56,13 @@ y_train = y[:int(num_samples * train_ratio)]
 x_test = x[int(num_samples * train_ratio):]
 y_test = y[int(num_samples * train_ratio):]
 
+cols_to_drop = [col for col in x.columns if "MUFL" in col or "MULL" in col]
+
+feature_remover = ColumnTransformer(
+    transformers=[('drop_features', 'drop', cols_to_drop)],
+    remainder='passthrough'
+)
+
 pipe_linear = Pipeline([
     ('scaler', StandardScaler()),
     ('regressor', LinearRegression())
@@ -71,10 +79,17 @@ pipe_rf = Pipeline([
 ])
 
 
+pipe_linear_dropped = Pipeline([
+    ('selector', feature_remover),
+    ('scaler', StandardScaler()),
+    ('regressor', LinearRegression())
+])
+
 models = {
     "Linear": pipe_linear,
     "Linear (No Scaler)": pipe_linear_no_scaler,
-    "Random Forest": pipe_rf
+    "Random Forest": pipe_rf,
+    "Linear (Dropped Features)": pipe_linear_dropped
 }
 results = {}
 
@@ -92,16 +107,16 @@ print(pd.DataFrame(results).T)
 
 params = {
     "rf__n_estimators": [100, 200, 300],
-    "rf__criterion": ["squared_error", "friedman_mse"], # Tiêu chuẩn tính độ lỗi hồi quy
+    "rf__criterion": ["squared_error", "friedman_mse"],
     "rf__max_depth": [5, 10, 15]
 }
 
 tscv = TimeSeriesSplit(n_splits=4)
 
 grid_search = GridSearchCV(
-    estimator=pipe_rf, 
-    param_grid=params, 
-    cv=tscv, 
+    estimator=pipe_rf,
+    param_grid=params,
+    cv=tscv,
     scoring="r2",
     verbose=2,
     n_jobs=-1
